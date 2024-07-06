@@ -1,7 +1,7 @@
 pipeline {
     agent any
     stages {
-        stage('Get Server IP Address') {
+        stage('Get Server IP Address!') {
             steps {
                 script {
                     if (!env.IP_ADDRESS_SERVER) {
@@ -13,6 +13,8 @@ pipeline {
                 }
             }
         }
+
+
         stage('Create Docker Network') {
             steps {
                 script {
@@ -23,14 +25,14 @@ pipeline {
         stage('Build MSSQL') {
             steps {
                 script {
-                    sh "docker build -f Dockerfile.mssql -t darkne24/saitdip:mssql.v.${BUILD_NUMBER}.dev --no-cache  ."
+                    sh "docker build -f Dockerfile.mssql -t darkne24/testdiplom:mssql.v.${BUILD_NUMBER}.dev --no-cache  ."
                 }
             }
         }
         stage('Start MSSQL') {
             steps {
                 script {
-                    sh "docker run -d --name mssql --hostname mssql --network project_net --ip 10.0.0.2 -p 1433:1433 --restart unless-stopped darkne24/saitdip:mssql.v.${BUILD_NUMBER}.dev"
+                    sh "docker run -d --name mssql --hostname mssql --network project_net --ip 10.0.0.2 -p 1433:1433 --restart unless-stopped darkne24/testdiplom:mssql.v.${BUILD_NUMBER}.dev"
                 }
             }
         }
@@ -59,12 +61,15 @@ pipeline {
                 }
             }
         }
-
         stage('Download Content Backend') {
             steps {
                 script {
-                    withCredentials([sshUserPrivateKey(credentialsId: '4ace6371-f907-4fcb-ab59-2ad63894fb7a', keyFileVariable: 'SSH_KEY')]) {
-                        sh 'GIT_SSH_COMMAND="ssh -i $SSH_KEY" git -C BackEnd pull origin BackEnd'
+                    withCredentials([sshUserPrivateKey(credentialsId: 'jgit', keyFileVariable: 'SSH_KEY')]) {
+                        if (fileExists('FrontEnd')) {
+                            sh 'GIT_SSH_COMMAND="ssh -i $SSH_KEY" git -C BackEnd pull origin BackEnd'
+                        } else {
+                            sh 'GIT_SSH_COMMAND="ssh -i $SSH_KEY" git clone git@github.com:jj975/project.git -b BackEnd BackEnd'
+                        }
                     }
                 }
             }
@@ -85,14 +90,14 @@ pipeline {
         stage('Build Backend') {
             steps {
                 script {
-                    sh "docker build -f Dockerfile.backend -t darkne24/saitdip:backend.v.${BUILD_NUMBER}.dev --no-cache  ."
+                    sh "docker build -f Dockerfile.backend -t darkne24/testdiplom:backend.v.${BUILD_NUMBER}.dev --no-cache  ."
                 }
             }
         }
         stage('Start Backend') {
             steps {
                 script {
-                    sh "docker run -d --name backend --hostname backend --network project_net --ip 10.0.0.3 -p 5034:5034 -p 52119:52119 --restart unless-stopped jj975/testdiplom:backend.v.${BUILD_NUMBER}.dev"
+                    sh "docker run -d --name backend --hostname backend --network project_net --ip 10.0.0.3 -p 5034:5034 -p 52119:52119 --restart unless-stopped darkne24/testdiplom:backend.v.${BUILD_NUMBER}.dev"
                 }
             }
         }
@@ -119,7 +124,11 @@ pipeline {
             steps {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: 'jgit', keyFileVariable: 'SSH_KEY')]) {
-                        sh 'GIT_SSH_COMMAND="ssh -i $SSH_KEY" git -C FrontEnd pull origin FrontEnd'
+                        if (fileExists('FrontEnd')) {
+                            sh 'GIT_SSH_COMMAND="ssh -i $SSH_KEY" git -C FrontEnd pull origin FrontEnd'
+                        } else {
+                            sh 'GIT_SSH_COMMAND="ssh -i $SSH_KEY" git clone git@github.com:qwertynebot/diplom.git -b FrontEnd FrontEnd'
+                        }
                     }
                 }
             }
@@ -137,14 +146,14 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 script {
-                    sh "docker build -f Dockerfile.frontend -t darkne24/saitdip:frontend.v.${BUILD_NUMBER}.dev --no-cache  ."
+                    sh "docker build -f Dockerfile.frontend -t darkne24/testdiplom:frontend.v.${BUILD_NUMBER}.dev --no-cache  ."
                 }
             }
         }
         stage('Start Frontend') {
             steps {
                 script {
-                    sh "docker run -d --name frontend --hostname frontend --network project_net --ip 10.0.0.4 -p 81:80 --restart unless-stopped darkne24/saitdip:frontend.v.${BUILD_NUMBER}.dev"
+                    sh "docker run -d --name frontend --hostname frontend --network project_net --ip 10.0.0.4 -p 81:80 --restart unless-stopped darkne24/testdiplom:frontend.v.${BUILD_NUMBER}.dev"
                 }
             }
         }
@@ -174,12 +183,12 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'duck', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
                         sh "docker stop mssql frontend backend"
-                        sh "docker commit mssql darkne24/saitdip:mssql.v.${BUILD_NUMBER}.lts"
-                        sh "docker push darkne24/saitdip:mssql.v.${BUILD_NUMBER}.lts"
-                        sh "docker commit backend darkne24/saitdip:backend.v.${BUILD_NUMBER}.lts"
-                        sh "docker push darkne24/saitdip:backend.v.${BUILD_NUMBER}.lts"
-                         sh "docker commit frontend darkne24/saitdip:frontend.v.${BUILD_NUMBER}.lts"
-                        sh "docker push darkne24/saitdip:frontend.v.${BUILD_NUMBER}.lts"
+                        sh "docker commit mssql darkne24/testdiplom:mssql.v.${BUILD_NUMBER}.lts"
+                        sh "docker push darkne24/testdiplom:mssql.v.${BUILD_NUMBER}.lts"
+                        sh "docker commit backend darkne24/testdiplom:backend.v.${BUILD_NUMBER}.lts"
+                        sh "docker push darkne24/testdiplom:backend.v.${BUILD_NUMBER}.lts"
+                         sh "docker commit frontend darkne24/testdiplom:frontend.v.${BUILD_NUMBER}.lts"
+                        sh "docker push darkne24/testdiplom:frontend.v.${BUILD_NUMBER}.lts"
                     }
                 }
             }
