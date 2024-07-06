@@ -1,0 +1,10 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY ./FrontEnd/my-app/package.json ./
+RUN npm install -g npm
+RUN npm install
+COPY ./FrontEnd/my-app ./
+
+EXPOSE 80
+EXPOSE 81
+CMD ["npm","start","--","--host","http://0.0.0.0"]
